@@ -41,6 +41,15 @@ char * spx_reporter_full_build_file_name(
     size_t size
 );
 
+int spx_reporter_full_delete_metadata(
+    const char * data_dir,
+    const char * key
+);
+
+int spx_reporter_full_delete_all_metadata(
+    const char * data_dir
+);
+
 spx_profiler_reporter_t * spx_reporter_full_create(const char * data_dir);
 
 void spx_reporter_full_set_custom_metadata_str(

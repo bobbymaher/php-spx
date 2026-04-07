@@ -24,6 +24,12 @@
     --progress-bar-color: #0d0;
     --hover-color: #0aa;
     --border-color: #044;
+    --delete-color: #e74c3c;
+    --delete-hover-color: #e34436;
+    --dialog-delete-button-background: var(--form-element-background);
+    --dialog-delete-button-hover-background: var(--table-sort-field-background);
+    --dialog-delete-button-color: var(--delete-color);
+    --dialog-delete-button-border-color: var(--border-color)
 }
 
 @media (prefers-color-scheme: light) {
@@ -34,6 +40,10 @@
         --form-element-background: #FFF;
         --table-sort-field-background: #EFF;
         --progress-bar-color: #151;
+        --dialog-delete-button-background: var(--delete-color);
+        --dialog-delete-button-hover-background: var(--delete-hover-color);
+        --dialog-delete-button-color: white;
+        --dialog-delete-button-border-color: #8b0d00;
     }
 }
 
@@ -96,8 +106,14 @@ table.data_table {
     margin-top: 5px;
 }
 
-table.data_table tr {
+table.data_table thead tr {
     cursor: pointer;
+}
+
+table.data_table tr .delete-btn {
+  font-weight: bold;
+  text-decoration: underline;
+  text-align: center;
 }
 
 table.data_table th,
@@ -112,11 +128,66 @@ table.data_table th:hover {
     background-color: var(--table-sort-field-background);
 }
 
+.spx-report-metadata {
+  font-weight: bold;
+}
+
+#spx-dialog {
+    background: linear-gradient(var(--gradient-begin), var(--gradient-end));
+    border: 2px solid var(--border-color);
+    padding: 20px;
+    min-width: 300px;
+    max-width: 80%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+#spx-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+#spx-dialog-title {
+  margin-bottom: 20px;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+#spx-dialog-message {
+    margin-bottom: 20px;
+    white-space: pre-wrap;
+}
+
+#spx-dialog-actions {
+    text-align: right;
+}
+
+#spx-dialog-actions button {
+    margin-left: 10px;
+    padding: 5px 15px;
+    background-color: var(--form-element-background);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+#spx-dialog-actions button:hover {
+    background-color: var(--table-sort-field-background);
+}
+
+#spx-dialog-actions #spx-dialog-confirm {
+    font-weight: bold;
+    background-color: var(--dialog-delete-button-background);
+    color: var(--dialog-delete-button-color);
+    border-color: var(--dialog-delete-button-border-color);
+}
+
+#spx-dialog-actions #spx-dialog-confirm:hover {
+  background-color: var(--dialog-delete-button-hover-background);
+}
+
 table.data_table tbody > tr:hover {
     background-color: var(--table-sort-field-background);
 }
 
-table.data_table td.breakable-text {
+table.data_table td.breakable-text, .spx-report-metadata-value {
     word-break: break-all;
 }
 
