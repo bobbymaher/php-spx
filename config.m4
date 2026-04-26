@@ -19,7 +19,14 @@ if test "$PHP_SPX" = "yes"; then
     AC_DEFINE_UNQUOTED([SPX_HTTP_UI_ASSETS_DIR], ["$PHP_SPX_ASSETS_DIR/web-ui"], [path of web-ui assets directory])
     PHP_SUBST([PHP_SPX_ASSETS_DIR])
 
-    CFLAGS="$CFLAGS -Werror -Wall -Wno-attributes -O3 -pthread"
+    CFLAGS="$CFLAGS -Werror -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-attributes -O3 -pthread"
+
+    if test "$CI" != "true"; then
+        CFLAGS="$CFLAGS -march=native"
+        AC_MSG_NOTICE([Enabling -march=native (not in CI)])
+    else
+        AC_MSG_NOTICE([Skipping -march=native in CI])
+    fi
 
     php_ver_num=$(echo $PHP_VERSION | awk -F. '{printf("%d%02d%02d",$1,$2,$3)}')
     if test "$php_ver_num" -ge 80200; then

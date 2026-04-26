@@ -2,7 +2,7 @@
     "name": "noisebynorthwest/php-spx",
     "type": "php-ext",
     "license": "GPL-3.0-or-later",
-    "description": "A simple & straight-to-the-point PHP profiling extension with its built-in web UI",
+    "description": "A low-overhead PHP profiler delivering a seamless experience with an integrated web UI",
     "keywords": ["profiler", "profiling", "performance", "debugging", "php", "extension"],
     "homepage": "https://github.com/NoiseByNorthwest/php-spx",
     "support": {
