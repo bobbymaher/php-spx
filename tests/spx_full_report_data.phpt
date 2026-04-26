@@ -30,8 +30,18 @@ $key = spx_profiler_stop();
 
 $zstdcatCommand = 'zstdcat';
 if (getenv('PATH') === false) {
-  // it happens with macos & PHP 7.0-7.1
-  $zstdcatCommand = '/opt/homebrew/bin/' . $zstdcatCommand;
+  // PATH not propagated (macOS or Linux with PHP 7.0-7.1)
+  $candidates = [
+    '/opt/homebrew/bin/zstdcat', // macOS Apple Silicon
+    '/usr/local/bin/zstdcat',    // macOS Intel Homebrew
+    '/usr/bin/zstdcat',          // Linux
+  ];
+  foreach ($candidates as $path) {
+    if (is_executable($path)) {
+      $zstdcatCommand = $path;
+      break;
+    }
+  }
 }
 
 echo shell_exec("$zstdcatCommand /tmp/spx/$key.txt.zst");

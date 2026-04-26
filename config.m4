@@ -19,7 +19,11 @@ if test "$PHP_SPX" = "yes"; then
     AC_DEFINE_UNQUOTED([SPX_HTTP_UI_ASSETS_DIR], ["$PHP_SPX_ASSETS_DIR/web-ui"], [path of web-ui assets directory])
     PHP_SUBST([PHP_SPX_ASSETS_DIR])
 
-    CFLAGS="$CFLAGS -Werror -Wall -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-attributes -O3 -pthread"
+    CFLAGS="$CFLAGS -Werror -Wall -Wno-unused-parameter -Wno-sign-compare -Wno-attributes -O3 -pthread"
+    
+    if test "$(uname -s)" = "Linux"; then
+        CFLAGS="$CFLAGS -Wextra"
+    fi
 
     if test "$CI" != "true"; then
         CFLAGS="$CFLAGS -march=native"

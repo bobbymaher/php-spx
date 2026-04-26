@@ -2,7 +2,7 @@
 set -ex
 cd $(dirname $0)
 
-esbuild main.js --bundle --format=esm \
+npx esbuild main.js --bundle --format=esm \
     --sourcemap --sources-content=true \
     --banner:js='/*! SPX - A seamless profiler for PHP
  * Copyright (C) 2017-2026 Sylvain Lassaut <NoiseByNorthwest@gmail.com>
