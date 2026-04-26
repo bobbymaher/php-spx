@@ -1,4 +1,4 @@
-# SPX - A simple profiler for PHP
+# SPX - A seamless profiler for PHP
 
 [![Build Status][:badge-ci:]][:link-ci:]
 ![Supported PHP versions: 7.0 .. 8.x][:badge-php-versions:]
@@ -16,7 +16,7 @@
 
 ![Showcase](https://github.com/NoiseByNorthwest/NoiseByNorthwest.github.io/blob/43e3ffe185a1dcec70e7c8ced36acfdf316bae65/php-spx/doc/fp1.gif)
 
-SPX, which stands for _Simple Profiling eXtension_, is just another profiling extension for PHP.
+SPX, which stands for _Seamless Profiling eXperience_, is just another profiling extension for PHP.
 It differentiates itself from other similar extensions as being:
 * totally free and confined to your infrastructure (i.e. no data leaks to a SaaS).
 * very simple to use: just set an environment variable (command line) or switch on a radio button (web request) to profile your script. Thus, you are free of:
@@ -24,6 +24,7 @@ It differentiates itself from other similar extensions as being:
   * using a dedicated browser extension or command line launcher.
 * [multi metrics](#available-metrics) capable: 22 are currently supported (various time & memory metrics, included files, objects in use, I/O...).
 * able to collect data without losing context. For example Xhprof (and potentially its forks) aggregates data per caller / callee pairs, which implies the loss of the full call stack and forbids timeline or Flamegraph based analysis.
+* low-overhead: roughly half the overhead of [XHProf](https://www.php.net/manual/en/book.xhprof.php) in tracing mode, close to [Excimer](https://www.mediawiki.org/wiki/Excimer) in sampling mode.
 * shipped with its [web UI](#web-ui) which allows to:
   * enable / configure profiling for the current browser session
   * list profiled script reports
@@ -507,21 +508,26 @@ SPX provides two-factor authentication with these 2 mandatory locks:
 
 Thus a client can profile your application via a web request only if **its IP address is white listed and its provided key is valid**.
 
-## Notes on accuracy
+## Notes on Accuracy
 
-In tracing mode (default), SPX is subject to accuracy issues for time related metrics when the measured function execution time is:
-- close or lower than the timer precision
-- close or lower than SPX's own per function overhead
+In tracing mode (the default), SPX may suffer from accuracy issues for time-related metrics when the measured function execution time is:
+- close to or lower than the timer’s precision,
+- close to or lower than SPX’s own per-function overhead.
 
-The first issue is mitigated by using the highest resolution timer provided by the platform. On Linux, FreeBSD & recent macOS versions the timer resolution is 1ns; on macOS before 10.12/Sierra, the timer resolution is only 1us.
+The first issue is mitigated by using the highest-resolution timer available on the platform.
+On Linux, FreeBSD, and recent macOS versions, the timer resolution is 1 ns.
+On macOS versions prior to 10.12 (Sierra), the timer resolution is only 1 us.
 
-The second issue is mitigated by taking into account SPX's time (wall / cpu) overhead by subtracting it to measured function execution time. This is done by evaluating SPX constant per function overhead before starting profiling the script.
+The second issue is mitigated by accounting for SPX's own (wall/cpu) per-function overhead.
+SPX subtracts this overhead from the measured execution time after evaluating its constant cost per function call before profiling begins.
 
-However, whatever the platform, if you want to maximize accuracy to find a time bottleneck, you should also:
-- avoid profiling internal functions.
-- avoid collecting additional metrics.
-- try sampling mode with different sampling periods.
-- try to play with maximum depth parameter to stop profiling at a given depth.
+Beyond these mitigations, if you want to further improve accuracy, you should:
+- prefer the **full** report (the default for HTTP request profiling) over the other report types,
+- build SPX with **Zstandard** support; you can verify this with `php -i`, which should display: `SPX Zstandard available => yes`,
+- avoid collecting additional metrics (everything is optimized for the default metric set `wt,zm`),
+- avoid profiling internal functions,
+- try sampling mode with different sampling periods,
+- experiment with the maximum depth parameter to stop profiling beyond a given call depth.
 
 ## Stubs
 

@@ -1,5 +1,5 @@
-/* SPX - A simple profiler for PHP
- * Copyright (C) 2017-2025 Sylvain Lassaut <NoiseByNorthwest@gmail.com>
+/* SPX - A seamless profiler for PHP
+ * Copyright (C) 2017-2026 Sylvain Lassaut <NoiseByNorthwest@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -145,6 +145,7 @@ char * spx_reporter_full_build_metadata_file_name(
 char * spx_reporter_full_build_file_name(
     const char * data_dir,
     const char * key,
+    spx_output_stream_compression_type_t compression_type,
     char * file_name,
     size_t size
 ) {
@@ -153,7 +154,7 @@ char * spx_reporter_full_build_file_name(
         suffix,
         sizeof(suffix),
         ".txt.%s",
-        spx_output_stream_compression_format_ext(SPX_OUTPUT_STREAM_COMPRESSION_BEST)
+        spx_output_stream_compression_format_ext(compression_type)
     );
 
     return spx_utils_resolve_confined_file_absolute_path(

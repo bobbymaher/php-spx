@@ -1,5 +1,5 @@
-/* SPX - A simple profiler for PHP
- * Copyright (C) 2017-2025 Sylvain Lassaut <NoiseByNorthwest@gmail.com>
+/* SPX - A seamless profiler for PHP
+ * Copyright (C) 2017-2026 Sylvain Lassaut <NoiseByNorthwest@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1123,9 +1123,17 @@ static int http_ui_handle_data_request(const char * data_dir, const char *relati
             spx_reporter_full_build_file_name(
                 data_dir,
                 relative_path + strlen(get_report_uri) - 1,
+                SPX_OUTPUT_STREAM_COMPRESSION_BEST,
                 file_name,
                 sizeof(file_name)
-            ) == NULL
+            ) == NULL &&
+                spx_reporter_full_build_file_name(
+                    data_dir,
+                    relative_path + strlen(get_report_uri) - 1,
+                    SPX_OUTPUT_STREAM_COMPRESSION_GZIP,
+                    file_name,
+                    sizeof(file_name)
+                ) == NULL
         ) {
             return -1;
         }
