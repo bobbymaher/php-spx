@@ -35,7 +35,7 @@ export function makeDataTable(containerId, options, rows) {
 
         for (let i = 0; i < options.columns.length; i++) {
             let column = options.columns[i];
-            html += `<th ${i == sort_col ? 'class="data_table-sort"' : ''}>${column.label}</th>`;
+            html += `<th${i == sort_col ? ' class="data_table-sort"' : ''}>${column.label}</th>`;
         }
 
         html += '</tr></thead><tbody>';
@@ -49,24 +49,36 @@ export function makeDataTable(containerId, options, rows) {
 
         for (let row of rows) {
             let url = options.makeRowUrl ? options.makeRowUrl(row) : null;
-            html += '<tr>';
+            html += `<tr${row.key ? ` id="row-${row.key}"` : ''}>`;
             for (let column of options.columns) {
                 let value = getColumnValue(column.value, row);
                 if (column.format) {
                     value = column.format(value);
                 }
 
-                if (url) {
+                if (url && !column.skipUrl) {
                     value = `<a href="${url}">${value}</a>`;
                 }
 
-                html += `<td class="${column.cssClass || ''}">${value}</td>`;
+                html += `<td${column.cssClass ? ` class="${column.cssClass}"` : ''}>${value}</td>`;
             }
 
             html += '</tr>';
         }
 
-        html += '</tbody></table>';
+        html += '</tbody>';
+
+        if (rows.length && options.footer) {
+          html += '<tfoot><tr>';
+          for (const footer of options.footer) {
+            html += `<td${footer.colspan ? ` colspan="${footer.colspan}"` : ''}>`;
+            html += footer.value;
+            html += '</td>';
+          }
+          html += '</tr></tfoot>';
+        }
+
+        html += '</table>';
 
         container.append(html);
         container.find('th').click(e => {

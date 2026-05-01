@@ -21,5 +21,14 @@ import * as profileDataAnalyzer from './profileDataAnalyzer.js';
 import * as widget from './widget.js';
 import * as dataTable from './dataTable.js';
 import * as layoutSplitter from './layoutSplitter.js';
+import * as confirmDialog from './confirmDialog.js';
 
-export { utils, fmt, profileDataAnalyzer, widget, dataTable, layoutSplitter };
+export {
+    utils,
+    fmt,
+    profileDataAnalyzer,
+    widget,
+    dataTable,
+    layoutSplitter,
+    confirmDialog,
+};

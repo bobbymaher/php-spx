@@ -1141,6 +1141,42 @@ static int http_ui_handle_data_request(const char * data_dir, const char *relati
         return http_ui_handle_static_file(file_name);
     }
 
+    if (0 == strcmp(relative_path, "/data/reports/delete_all")) {
+        if (
+          spx_reporter_full_delete_all_reports(data_dir) != 0
+        ) {
+          return -1;
+        }
+
+        spx_php_output_add_header_line("HTTP/1.1 200 OK");
+        spx_php_output_add_header_line("Content-Type: application/json");
+        spx_php_output_send_headers();
+
+        spx_php_output_direct_print("{\"success\": true}\n");
+
+        return 0;
+    }
+
+    const char * delete_report_uri = "/data/reports/delete/";
+    if (spx_utils_str_starts_with(relative_path, delete_report_uri)) {
+        if (
+          spx_reporter_full_delete_report(
+            data_dir,
+            relative_path + strlen(delete_report_uri) - 1
+          ) != 0
+        ) {
+          return -1;
+        }
+
+        spx_php_output_add_header_line("HTTP/1.1 200 OK");
+        spx_php_output_add_header_line("Content-Type: application/json");
+        spx_php_output_send_headers();
+
+        spx_php_output_direct_print("{\"success\": true}\n");
+
+        return 0;
+    }
+
     return -1;
 }
 

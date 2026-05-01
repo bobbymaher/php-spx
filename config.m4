@@ -12,6 +12,9 @@ fi
 PHP_ARG_WITH(spx-assets-dir, for assets path,
 [  --with-spx-assets-dir[=DIR]   Set the installation path of assets.], $prefix/share/misc/php-spx/assets)
 
+PHP_ARG_ENABLE(spx-symlink-assets-dir, whether to symlink the SPX assets directory,
+[  --enable-spx-symlink-assets-dir   Symlink SPX assets directory to the source folder during installation], no, no)
+
 if test "$PHP_SPX" = "yes"; then
     AC_DEFINE(HAVE_SPX, 1, [spx])
     AC_MSG_CHECKING([for assets directory])
@@ -19,8 +22,15 @@ if test "$PHP_SPX" = "yes"; then
     AC_DEFINE_UNQUOTED([SPX_HTTP_UI_ASSETS_DIR], ["$PHP_SPX_ASSETS_DIR/web-ui"], [path of web-ui assets directory])
     PHP_SUBST([PHP_SPX_ASSETS_DIR])
 
+    if test "$PHP_SYMLINK_SPX_ASSETS_DIR" = "yes"; then
+        PHP_SPX_SYMLINK_ASSETS_DIR="yes"
+    else
+        PHP_SPX_SYMLINK_ASSETS_DIR="no"
+    fi
+    PHP_SUBST([PHP_SPX_SYMLINK_ASSETS_DIR])
+
     CFLAGS="$CFLAGS -Werror -Wall -Wno-unused-parameter -Wno-sign-compare -Wno-attributes -O3 -pthread"
-    
+
     if test "$(uname -s)" = "Linux"; then
         CFLAGS="$CFLAGS -Wextra"
     fi

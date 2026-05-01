@@ -16,6 +16,10 @@
  */
 
 export function makeDataTable(containerId, options, rows) {
+    const hasRowActions = options.rowActions?.length > 0;
+    const hasTableActions = options.tableActions?.length > 0;
+    const totalCols = options.columns.length + (hasRowActions ? 1 : 0);
+
     let sort_col = 0;
     let sort_dir = -1;
 
@@ -29,11 +33,27 @@ export function makeDataTable(containerId, options, rows) {
 
     const container = document.getElementById(containerId);
     let render = () => {
-        let html = '<table class="data_table"><thead><tr>';
+        let html = '';
+
+        if (rows.length && hasTableActions) {
+            const actionsHtml = options.tableActions
+                .map(
+                    (action, i) =>
+                        `<a class="${action.cssClass || ''}" href="${action.href}" data-table-action-index="${i}">${action.label}</a>`
+                )
+                .join(' ');
+            html += `<div class="data_table-toolbar">${actionsHtml}</div>`;
+        }
+
+        html += '<table class="data_table"><thead><tr>';
 
         for (let i = 0; i < options.columns.length; i++) {
             let column = options.columns[i];
             html += `<th ${i == sort_col ? 'class="data_table-sort"' : ''}>${column.label}</th>`;
+        }
+
+        if (hasRowActions) {
+            html += '<th>Actions</th>';
         }
 
         html += '</tr></thead><tbody>';
@@ -47,7 +67,7 @@ export function makeDataTable(containerId, options, rows) {
 
         for (let row of rows) {
             let url = options.makeRowUrl ? options.makeRowUrl(row) : null;
-            html += '<tr>';
+            html += `<tr${row.key ? ` id="row-${row.key}"` : ''}>`;
             for (let column of options.columns) {
                 let value = getColumnValue(column.value, row);
                 if (column.format) {
@@ -58,7 +78,17 @@ export function makeDataTable(containerId, options, rows) {
                     value = `<a href="${url}">${value}</a>`;
                 }
 
-                html += `<td class="${column.cssClass || ''}">${value}</td>`;
+                html += `<td${column.cssClass ? ` class="${column.cssClass}"` : ''}>${value}</td>`;
+            }
+
+            if (hasRowActions) {
+                const actionsHtml = options.rowActions
+                    .map(
+                        (action, i) =>
+                            `<a class="data_table-action-btn${action.cssClass ? ` ${action.cssClass}` : ''}" href="${action.href(row)}" data-action-index="${i}" data-row-key="${row.key}"${action.title ? ` title="${action.title}"` : ''}>${action.label}</a>`
+                    )
+                    .join(' ');
+                html += `<td class="data_table-actions">${actionsHtml}</td>`;
             }
 
             html += '</tr>';
@@ -83,4 +113,44 @@ export function makeDataTable(containerId, options, rows) {
     };
 
     render();
+
+    if (hasRowActions || hasTableActions) {
+        container.addEventListener('click', async (e) => {
+            const tableActionEl = e.target.closest('[data-table-action-index]');
+            if (tableActionEl) {
+                e.preventDefault();
+                const action =
+                    options.tableActions[
+                        tableActionEl.dataset.tableActionIndex
+                    ];
+                if (action.confirm) {
+                    const { title, message } = action.confirm();
+                    if (!(await options.confirmFn(title, message))) return;
+                }
+                const response = await fetch(tableActionEl.href, {
+                    credentials: 'same-origin',
+                });
+                if (response.ok) action.onSuccess(container);
+                return;
+            }
+
+            const rowActionEl = e.target.closest('[data-action-index]');
+            if (rowActionEl) {
+                e.preventDefault();
+                const action =
+                    options.rowActions[rowActionEl.dataset.actionIndex];
+                const row = rows.find(
+                    (r) => String(r.key) === rowActionEl.dataset.rowKey
+                );
+                if (action.confirm) {
+                    const { title, message } = action.confirm(row);
+                    if (!(await options.confirmFn(title, message))) return;
+                }
+                const response = await fetch(rowActionEl.href, {
+                    credentials: 'same-origin',
+                });
+                if (response.ok) action.onSuccess(row, container);
+            }
+        });
+    }
 }

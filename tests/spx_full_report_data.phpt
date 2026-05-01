@@ -28,23 +28,31 @@ foo();
 
 $key = spx_profiler_stop();
 
-$zstdcatCommand = 'zstdcat';
-if (getenv('PATH') === false) {
-  // PATH not propagated (macOS or Linux with PHP 7.0-7.1)
-  $candidates = [
-    '/opt/homebrew/bin/zstdcat', // macOS Apple Silicon
-    '/usr/local/bin/zstdcat',    // macOS Intel Homebrew
-    '/usr/bin/zstdcat',          // Linux
-  ];
-  foreach ($candidates as $path) {
-    if (is_executable($path)) {
-      $zstdcatCommand = $path;
-      break;
+$data_dir = ini_get('spx.data_dir');
+$profileFile = "$data_dir/$key.txt.zst";
+if (!file_exists($profileFile)) {
+  // If the current system does not have the zstd dev package installed, then fall back to using the gzip version.
+  $profileFile = "$data_dir/$key.txt.gz";
+  $catCommand = 'zcat';
+} else {
+  $catCommand = 'zstdcat';
+  if (getenv('PATH') === false) {
+    // PATH not propagated (macOS or Linux with PHP 7.0-7.1)
+    $candidates = [
+      '/opt/homebrew/bin/zstdcat', // macOS Apple Silicon
+      '/usr/local/bin/zstdcat',    // macOS Intel Homebrew
+      '/usr/bin/zstdcat',          // Linux
+    ];
+    foreach ($candidates as $path) {
+      if (is_executable($path)) {
+        $catCommand = $path;
+        break;
+      }
     }
   }
 }
 
-echo shell_exec("$zstdcatCommand /tmp/spx/$key.txt.zst");
+echo shell_exec(sprintf('%s %s', escapeshellcmd($catCommand), escapeshellarg($profileFile)));
 
 ?>
 --EXPECTF--

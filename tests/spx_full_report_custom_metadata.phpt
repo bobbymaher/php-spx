@@ -32,7 +32,7 @@ foreach ($metadataStrings as $metadataString) {
     foo();
 
     $key = spx_profiler_stop();
-    echo file_get_contents('/tmp/spx/' . $key . '.json');
+    echo file_get_contents(ini_get('spx.data_dir') . '/' . $key . '.json');
 }
 
 ?>

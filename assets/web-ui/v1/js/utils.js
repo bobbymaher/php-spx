@@ -23,6 +23,15 @@ function getImportUrl(path) {
 
 const math = await import(getImportUrl('/v1/js/math.js'));
 
+export function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function getCookieVar(name) {
     let m = document.cookie.match(new RegExp('(^|\\b)' + name + '=([^;]+)'));
 

@@ -166,6 +166,88 @@ char * spx_reporter_full_build_file_name(
     );
 }
 
+int spx_reporter_full_delete_report(
+    const char * data_dir,
+    const char * key
+) {
+    char metadata_file_name[PATH_MAX];
+    char report_file_name[PATH_MAX];
+
+    if (
+        spx_reporter_full_build_metadata_file_name(
+            data_dir,
+            key,
+            metadata_file_name,
+            sizeof(metadata_file_name)
+        ) == NULL
+    ) {
+        return -1;
+    }
+
+    (void) unlink(metadata_file_name);
+
+    if (
+        spx_reporter_full_build_file_name(
+            data_dir,
+            key,
+            SPX_OUTPUT_STREAM_COMPRESSION_BEST,
+            report_file_name,
+            sizeof(report_file_name)
+        ) != NULL
+    ) {
+        (void) unlink(report_file_name);
+    }
+
+    if (
+        spx_reporter_full_build_file_name(
+            data_dir,
+            key,
+            SPX_OUTPUT_STREAM_COMPRESSION_GZIP,
+            report_file_name,
+            sizeof(report_file_name)
+        ) != NULL
+    ) {
+        (void) unlink(report_file_name);
+    }
+
+    return 0;
+}
+
+int spx_reporter_full_delete_all_reports(
+    const char * data_dir
+) {
+    DIR * dir = opendir(data_dir);
+    if (!dir) {
+        return -1;
+    }
+
+    char file_path[PATH_MAX];
+    const struct dirent * entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (
+            !spx_utils_str_ends_with(entry->d_name, ".json") &&
+            !spx_utils_str_ends_with(entry->d_name, ".txt.gz") &&
+            !spx_utils_str_ends_with(entry->d_name, ".txt.zst")
+        ) {
+            continue;
+        }
+
+        snprintf(
+            file_path,
+            sizeof(file_path),
+            "%s/%s",
+            data_dir,
+            entry->d_name
+        );
+
+        (void) unlink(file_path);
+    }
+
+    closedir(dir);
+
+    return 0;
+}
+
 spx_profiler_reporter_t * spx_reporter_full_create(const char * data_dir)
 {
     full_reporter_t * reporter = malloc(sizeof(*reporter));
@@ -708,7 +790,7 @@ static int metadata_save(const metadata_t * metadata, const char * file_name)
     });
 
     fprintf(fp, "  ]\n}\n");
-    
+
     fclose(fp);
 
     return 0;
