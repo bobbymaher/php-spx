@@ -29,13 +29,13 @@ foo();
 $key = spx_profiler_stop();
 
 $data_dir = ini_get('spx.data_dir');
-$profile_file = "$data_dir/$key.txt.zst";
-if (!file_exists($profile_file)) {
+$profileFile = "$data_dir/$key.txt.zst";
+if (!file_exists($profileFile)) {
   // If the current system does not have the zstd dev package installed, then fall back to using the gzip version.
-  $profile_file = "$data_dir/$key.txt.gz";
-  $zcatCommand = 'zcat';
+  $profileFile = "$data_dir/$key.txt.gz";
+  $catCommand = 'zcat';
 } else {
-  $zcatCommand = 'zstdcat';
+  $catCommand = 'zstdcat';
   if (getenv('PATH') === false) {
     // PATH not propagated (macOS or Linux with PHP 7.0-7.1)
     $candidates = [
@@ -45,14 +45,14 @@ if (!file_exists($profile_file)) {
     ];
     foreach ($candidates as $path) {
       if (is_executable($path)) {
-        $zcatCommand = $path;
+        $catCommand = $path;
         break;
       }
     }
   }
 }
 
-echo shell_exec(sprintf('%s %s', escapeshellcmd($zcatCommand), escapeshellarg($profile_file)));
+echo shell_exec(sprintf('%s %s', escapeshellcmd($catCommand), escapeshellarg($profileFile)));
 
 ?>
 --EXPECTF--

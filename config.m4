@@ -12,8 +12,8 @@ fi
 PHP_ARG_WITH(spx-assets-dir, for assets path,
 [  --with-spx-assets-dir[=DIR]   Set the installation path of assets.], $prefix/share/misc/php-spx/assets)
 
-PHP_ARG_ENABLE(symlink-spx-assets-dir, whether to symlink the SPX assets directory,
-[  --enable-symlink-spx-assets-dir   Symlink SPX assets directory to the source folder during installation], no, no)
+PHP_ARG_ENABLE(spx-symlink-assets-dir, whether to symlink the SPX assets directory,
+[  --enable-spx-symlink-assets-dir   Symlink SPX assets directory to the source folder during installation], no, no)
 
 if test "$PHP_SPX" = "yes"; then
     AC_DEFINE(HAVE_SPX, 1, [spx])

@@ -41,12 +41,12 @@ char * spx_reporter_full_build_file_name(
     size_t size
 );
 
-int spx_reporter_full_delete_metadata(
+int spx_reporter_full_delete_report(
     const char * data_dir,
     const char * key
 );
 
-int spx_reporter_full_delete_all_metadata(
+int spx_reporter_full_delete_all_reports(
     const char * data_dir
 );
 

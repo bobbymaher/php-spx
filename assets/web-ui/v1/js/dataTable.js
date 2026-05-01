@@ -66,6 +66,8 @@ export function makeDataTable(containerId, options, rows) {
             html += '</tr>';
         }
 
+        html += '</tbody>';
+
         if (rows.length && options.footer) {
           html += '<tfoot><tr>';
           for (const footer of options.footer) {
@@ -76,7 +78,7 @@ export function makeDataTable(containerId, options, rows) {
           html += '</tr></tfoot>';
         }
 
-        html += '</tbody></table>';
+        html += '</table>';
 
         container.append(html);
         container.find('th').click(e => {

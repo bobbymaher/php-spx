@@ -1143,7 +1143,7 @@ static int http_ui_handle_data_request(const char * data_dir, const char *relati
 
     if (0 == strcmp(relative_path, "/data/reports/delete_all")) {
         if (
-          spx_reporter_full_delete_all_metadata(data_dir) != 0
+          spx_reporter_full_delete_all_reports(data_dir) != 0
         ) {
           return -1;
         }
@@ -1160,7 +1160,7 @@ static int http_ui_handle_data_request(const char * data_dir, const char *relati
     const char * delete_report_uri = "/data/reports/delete/";
     if (spx_utils_str_starts_with(relative_path, delete_report_uri)) {
         if (
-          spx_reporter_full_delete_metadata(
+          spx_reporter_full_delete_report(
             data_dir,
             relative_path + strlen(delete_report_uri) - 1
           ) != 0

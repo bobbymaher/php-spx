@@ -166,7 +166,7 @@ char * spx_reporter_full_build_file_name(
     );
 }
 
-int spx_reporter_full_delete_metadata(
+int spx_reporter_full_delete_report(
     const char * data_dir,
     const char * key
 ) {
@@ -184,6 +184,8 @@ int spx_reporter_full_delete_metadata(
         return -1;
     }
 
+    (void) unlink(metadata_file_name);
+
     if (
         spx_reporter_full_build_file_name(
             data_dir,
@@ -196,12 +198,22 @@ int spx_reporter_full_delete_metadata(
         (void) unlink(report_file_name);
     }
 
-    (void) unlink(metadata_file_name);
+    if (
+        spx_reporter_full_build_file_name(
+            data_dir,
+            key,
+            SPX_OUTPUT_STREAM_COMPRESSION_GZIP,
+            report_file_name,
+            sizeof(report_file_name)
+        ) != NULL
+    ) {
+        (void) unlink(report_file_name);
+    }
 
     return 0;
 }
 
-int spx_reporter_full_delete_all_metadata(
+int spx_reporter_full_delete_all_reports(
     const char * data_dir
 ) {
     DIR * dir = opendir(data_dir);

@@ -23,6 +23,10 @@
     --progress-bar-color: #0d0;
     --hover-color: #43526d;
     --border-color: #272c37;
+    --delete-color: #e74c3c;
+    --confirm-dialog-confirm-btn-background: var(--form-element-background);
+    --confirm-dialog-confirm-btn-color: var(--delete-color);
+    --confirm-dialog-confirm-btn-border-color: var(--border-color);
 }
 
 @media (prefers-color-scheme: light) {
@@ -34,6 +38,9 @@
         --progress-bar-color: #151;
         --hover-color: #cfd4e1;
         --border-color: #f8f8f9;
+        --confirm-dialog-confirm-btn-background: var(--delete-color);
+        --confirm-dialog-confirm-btn-color: var(--background-color);
+        --confirm-dialog-confirm-btn-border-color: var(--delete-color);
     }
 }
 
@@ -179,10 +186,6 @@ table.data_table {
     margin-top: 5px;
 }
 
-table.data_table tr {
-    cursor: pointer;
-}
-
 table.data_table th,
 table.data_table td {
    border: 1px solid var(--border-color);
@@ -190,23 +193,108 @@ table.data_table td {
    padding: 3px;
 }
 
-table.data_table th.data_table-sort,
-table.data_table th:hover {
-    background-color: var(--table-sort-field-background);
+table.data_table thead tr {
+    cursor: pointer;
 }
 
-table.data_table tbody > tr:hover {
-    background-color: var(--table-sort-field-background);
+table.data_table th.data_table-sort,
+table.data_table th:hover {
+    background-color: var(--hover-color);
 }
 
 table.data_table td.breakable-text {
     word-break: break-all;
 }
 
+table.data_table tbody > tr:hover {
+    background-color: var(--hover-color);
+}
+
 table.data_table td > a {
     display: block;
     text-decoration: none;
 }
+
+table.data_table tr .data_table-action-btn {
+    font-weight: bold;
+    text-decoration: underline;
+    text-align: center;
+    cursor: pointer;
+}
+
+.data_table-toolbar {
+    margin-bottom: 8px;
+}
+
+.data_table-toolbar a {
+    display: inline-block;
+    padding: 5px 12px;
+    background-color: var(--form-element-background);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    font-family: monospace;
+    text-decoration: none;
+    color: var(--delete-color);
+    font-weight: bold;
+}
+
+.data_table-toolbar a:hover {
+    background-color: var(--hover-color);
+}
+
+
+#confirm-dialog {
+    background: var(--background-color);
+    border: 2px solid var(--border-color);
+    padding: 20px;
+    min-width: 300px;
+    max-width: 80%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+#confirm-dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+#confirm-dialog-title {
+    margin-bottom: 20px;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+#confirm-dialog-message {
+    margin-bottom: 20px;
+    white-space: pre-wrap;
+}
+
+#confirm-dialog-actions {
+    text-align: right;
+}
+
+#confirm-dialog-actions button {
+    margin-left: 10px;
+    padding: 5px 15px;
+    background-color: var(--form-element-background);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    font-family: monospace;
+}
+
+#confirm-dialog-actions button:hover {
+    background-color: var(--hover-color);
+}
+
+#confirm-dialog-actions #confirm-dialog-confirm {
+    font-weight: bold;
+    background-color: var(--confirm-dialog-confirm-btn-background);
+    color: var(--confirm-dialog-confirm-btn-color);
+    border-color: var(--confirm-dialog-confirm-btn-border-color);
+}
+
+#confirm-dialog-actions #confirm-dialog-confirm:hover {
+    background-color: var(--hover-color);
+}
+
 
 #init-report {
     position: absolute;

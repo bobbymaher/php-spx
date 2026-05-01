@@ -109,8 +109,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                 $reports.on('click', '#delete-all', async (e) => {
                   e.preventDefault();
                   if (await spxConfirm('Do you want to delete all the SPX reports?', 'This action cannot be undone.')) {
-                    $reports.find('tbody,tfoot').html('');
-                    fetch(e.currentTarget.href, {credentials: "same-origin"});
+                    const response = await fetch(e.currentTarget.href, {credentials: "same-origin"});
+                    if (response.ok) {
+                      $reports.find('tbody,tfoot').html('');
+                    }
                   }
                   return false;
                 });
@@ -130,12 +132,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
                     `<span class="spx-report-metadata">Recorded calls</span>: <span class="spx-report-metadata-value">${escapeHtml(rowData.recordedCalls)}</span>`,
                   ].join('\n');
                   if (await spxConfirm('Do you want to delete the SPX report?', confirmationMessage)) {
-                    $reports.find(`#row-${rowData.key}`).remove();
-                    if ($reports.find('tbody tr').length === 0) {
-                      // Remove the footer if there are no more reports.
-                      $reports.find('tfoot').html('');
+                    const response = await fetch(e.currentTarget.href, {credentials: "same-origin"});
+                    if (response.ok) {
+                      $reports.find(`#row-${rowData.key}`).remove();
+                      if ($reports.find('tbody tr').length === 0) {
+                        $reports.find('tfoot').html('');
+                      }
                     }
-                    fetch(e.currentTarget.href, {credentials: "same-origin"});
                   }
                   return false;
                 });

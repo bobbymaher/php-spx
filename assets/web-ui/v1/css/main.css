@@ -29,7 +29,7 @@
     --dialog-delete-button-background: var(--form-element-background);
     --dialog-delete-button-hover-background: var(--table-sort-field-background);
     --dialog-delete-button-color: var(--delete-color);
-    --dialog-delete-button-border-color: var(--border-color)
+    --dialog-delete-button-border-color: var(--border-color);
 }
 
 @media (prefers-color-scheme: light) {
