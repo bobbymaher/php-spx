@@ -1563,7 +1563,23 @@ class CallRangeTree {
             new CumCostStats(this.callList.getMetrics())
         );
 
-        const remainingRange = this.range.copy().intersect(range);
+        const clampedRange = this.range.copy().intersect(range);
+        let remainingStart = clampedRange.start;
+
+        // Children must be sorted by range.start: the gap-filling logic below
+        // advances remainingStart left-to-right and would double-count a child's
+        // range if an earlier child in the array had a larger range.start.
+        if (DEBUG) {
+            for (let i = 1; i < this.children.length; i++) {
+                if (
+                    this.children[i].range.start <=
+                    this.children[i - 1].range.start
+                ) {
+                    throw new Error('Children are not sorted by range.start');
+                }
+            }
+        }
+
         for (const child of this.children) {
             timeRangeStats.merge(
                 child.computeTimeRangeStats(
@@ -1575,12 +1591,42 @@ class CallRangeTree {
                 callTreeStatsMinDurationThreshold
             );
 
-            remainingRange.sub(child.range);
+            if (child.range.overlaps(clampedRange)) {
+                const childClampedStart = Math.max(
+                    child.range.start,
+                    clampedRange.start
+                );
+                const childClampedEnd = Math.min(
+                    child.range.end,
+                    clampedRange.end
+                );
+
+                if (remainingStart < childClampedStart) {
+                    timeRangeStats
+                        .getCumCostStats()
+                        .merge(
+                            this.metricValuesList.getCumCostStats(
+                                new math.Range(
+                                    remainingStart,
+                                    childClampedStart
+                                )
+                            )
+                        );
+                }
+
+                remainingStart = Math.max(remainingStart, childClampedEnd);
+            }
         }
 
-        timeRangeStats
-            .getCumCostStats()
-            .merge(this.metricValuesList.getCumCostStats(remainingRange));
+        if (remainingStart < clampedRange.end) {
+            timeRangeStats
+                .getCumCostStats()
+                .merge(
+                    this.metricValuesList.getCumCostStats(
+                        new math.Range(remainingStart, clampedRange.end)
+                    )
+                );
+        }
 
         return timeRangeStats;
     }
