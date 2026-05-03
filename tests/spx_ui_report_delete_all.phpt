@@ -10,7 +10,7 @@ log_errors=on
 <?php
 $dataDir = ini_get('spx.data_dir');
 
-$clean = fn () => exec(sprintf('rm -rf %s', escapeshellarg($dataDir)));
+$clean = function () use ($dataDir) { exec(sprintf('rm -rf %s', escapeshellarg($dataDir))); };
 $clean();
 @mkdir($dataDir);
 
