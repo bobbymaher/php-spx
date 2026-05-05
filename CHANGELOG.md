@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Added `SPX_DROP_PROFILES_UNDER_MS` parameter (with `spx.http_profiling_drop_profiles_under_ms` INI counterpart for HTTP requests) to discard profiles whose total wall time is below a configurable millisecond threshold. Default `0` keeps existing behavior. Useful for bounding disk usage when HTTP profiling is enabled broadly.
+
 ## [v0.4.22](https://github.com/NoiseByNorthwest/php-spx/compare/v0.4.21...v0.4.22)
 
 ### Fixed
