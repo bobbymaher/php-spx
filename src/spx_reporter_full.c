@@ -347,12 +347,16 @@ static void finalize(full_reporter_t * reporter, const spx_profiler_event_t * ev
         reporter->metadata->enabled_metrics[i] = event->enabled_metrics[i];
     });
 
-    if (reporter->drop_under_ms > 0
-        && reporter->metadata->wall_time_ms < reporter->drop_under_ms) {
-        spx_output_stream_close(reporter->output);
-        reporter->output = NULL;
-        unlink(reporter->profile_file_name);
-        return;
+    if (reporter->drop_under_ms > 0) {
+        const size_t wall_time_us = reporter->metadata->wall_time_ms;
+        const size_t threshold_us = reporter->drop_under_ms * 1000;
+
+        if (wall_time_us < threshold_us) {
+            spx_output_stream_close(reporter->output);
+            reporter->output = NULL;
+            unlink(reporter->profile_file_name);
+            return;
+        }
     }
 
     metadata_save(reporter->metadata, reporter->metadata_file_name);
