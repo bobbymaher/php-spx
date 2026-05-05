@@ -93,6 +93,7 @@ ZEND_BEGIN_MODULE_GLOBALS(spx)
     const char * http_profiling_sampling_period;
     const char * http_profiling_depth;
     const char * http_profiling_metrics;
+    const char * http_profiling_drop_profiles_under_ms;
 ZEND_END_MODULE_GLOBALS(spx)
 
 ZEND_DECLARE_MODULE_GLOBALS(spx)
@@ -163,6 +164,10 @@ PHP_INI_BEGIN()
     STD_PHP_INI_ENTRY(
         "spx.http_profiling_metrics", NULL, PHP_INI_SYSTEM,
         OnUpdateString, http_profiling_metrics, zend_spx_globals, spx_globals
+    )
+    STD_PHP_INI_ENTRY(
+        "spx.http_profiling_drop_profiles_under_ms", NULL, PHP_INI_SYSTEM,
+        OnUpdateString, http_profiling_drop_profiles_under_ms, zend_spx_globals, spx_globals
     )
 PHP_INI_END()
 
