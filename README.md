@@ -279,6 +279,7 @@ while ($task = get_next_ready_task()) {
 | _spx.http_profiling_sampling_period_ | _NULL_ | _PHP_INI_SYSTEM_ | The INI level counterpart of the `SPX_SAMPLING_PERIOD` parameter, for HTTP requests only. See [here for more details](#available-parameters). |
 | _spx.http_profiling_depth_ | _NULL_ | _PHP_INI_SYSTEM_ | The INI level counterpart of the `SPX_DEPTH` parameter, for HTTP requests only. See [here for more details](#available-parameters). |
 | _spx.http_profiling_metrics_ | _NULL_ | _PHP_INI_SYSTEM_ | The INI level counterpart of the `SPX_METRICS` parameter, for HTTP requests only. See [here for more details](#available-parameters). |
+| _spx.http_profiling_drop_profiles_under_ms_ | _NULL_ | _PHP_INI_SYSTEM_ | The INI level counterpart of the `SPX_DROP_PROFILES_UNDER_MS` parameter, for HTTP requests only. See [here for more details](#available-parameters). |
 
 _\*: `*` (match all) and subnet masks (e.g. `192.168.1.0/24`) are supported._
 
@@ -359,6 +360,7 @@ Here is the list below:
 | _SPX_FP_COLOR_ | `1` | Whether to enable flat profile color mode. |
 | _SPX_TRACE_SAFE_ | `0` | The trace file is by default written in a way to enforce accuracy, but in case of process crash (e.g. segfault) some logs could be lost. If you want to enforce durability (e.g. to find the last event before a crash) you just have to set this parameter to 1. |
 | _SPX_TRACE_FILE_ |  | Custom trace file name. If not specified it will be generated in `/tmp` and displayed on STDERR at the end of the script. |
+| _SPX_DROP_PROFILES_UNDER_MS_ | `0` | If greater than `0`, profiles whose total wall time (in milliseconds) is below this value are discarded — neither the profile data file nor the metadata file is saved. Useful to bound disk usage when HTTP profiling is broadly enabled: only profiles slow enough to be worth analyzing are kept. The default `0` means the feature is disabled and every profile is saved. |
 
 #### Setting parameters
 
