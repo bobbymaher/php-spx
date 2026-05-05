@@ -40,7 +40,7 @@ char * spx_reporter_full_build_file_name(
     size_t size
 );
 
-spx_profiler_reporter_t * spx_reporter_full_create(const char * data_dir);
+spx_profiler_reporter_t * spx_reporter_full_create(const char * data_dir, size_t drop_under_ms);
 
 void spx_reporter_full_set_custom_metadata_str(
     const spx_profiler_reporter_t * base_reporter,

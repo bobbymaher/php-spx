@@ -75,6 +75,9 @@ typedef struct {
     buffer_entry_t buffer[BUFFER_CAPACITY];
 
     spx_str_builder_t * str_builder;
+
+    size_t drop_under_ms;
+    char profile_file_name[PATH_MAX];
 } full_reporter_t;
 
 static spx_profiler_reporter_cost_t full_notify(
@@ -154,7 +157,7 @@ char * spx_reporter_full_build_file_name(
     );
 }
 
-spx_profiler_reporter_t * spx_reporter_full_create(const char * data_dir)
+spx_profiler_reporter_t * spx_reporter_full_create(const char * data_dir, size_t drop_under_ms)
 {
     full_reporter_t * reporter = malloc(sizeof(*reporter));
     if (!reporter) {
@@ -167,16 +170,16 @@ spx_profiler_reporter_t * spx_reporter_full_create(const char * data_dir)
     reporter->metadata = NULL;
     reporter->output = NULL;
     reporter->str_builder = NULL;
+    reporter->drop_under_ms = drop_under_ms;
 
     reporter->metadata = metadata_create();
     if (!reporter->metadata) {
         goto error;
     }
 
-    char file_name[PATH_MAX];
     snprintf(
-        file_name,
-        sizeof(file_name),
+        reporter->profile_file_name,
+        sizeof(reporter->profile_file_name),
         "%s/%s.txt.gz",
         data_dir,
         reporter->metadata->key
@@ -191,7 +194,7 @@ spx_profiler_reporter_t * spx_reporter_full_create(const char * data_dir)
     );
 
     (void) mkdir(data_dir, 0777);
-    reporter->output = spx_output_stream_open(file_name, 1);
+    reporter->output = spx_output_stream_open(reporter->profile_file_name, 1);
     if (!reporter->output) {
         goto error;
     }
