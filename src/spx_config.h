@@ -52,6 +52,7 @@ typedef struct {
 
     const char * trace_file;
     int trace_safe;
+    size_t drop_profiles_under_ms;
 } spx_config_t;
 
 typedef enum {
