@@ -50,6 +50,8 @@ typedef struct {
 
     const char * trace_file;
     const char * trace_safe_str;
+
+    const char * drop_under_ms_str;
 } source_data_t;
 
 typedef const char * (*source_handler_t) (const char * parameter);
@@ -149,6 +151,8 @@ static void init_config(spx_config_t * config, int cli)
 
     config->trace_file = NULL;
     config->trace_safe = 0;
+
+    config->drop_profiles_under_ms = 0;
 }
 
 static void finalize_config(spx_config_t * config, int cli)
@@ -213,6 +217,7 @@ static void source_data_get(source_data_t * source_data, source_handler_t handle
     source_data->fp_color_str         = handler("SPX_FP_COLOR");
     source_data->trace_file           = handler("SPX_TRACE_FILE");
     source_data->trace_safe_str       = handler("SPX_TRACE_SAFE");
+    source_data->drop_under_ms_str    = handler("SPX_DROP_PROFILES_UNDER_MS");
 }
 
 static void source_data_to_config(const source_data_t * source_data, spx_config_t * config)
@@ -301,6 +306,11 @@ static void source_data_to_config(const source_data_t * source_data, spx_config_
 
     if (source_data->trace_safe_str) {
         config->trace_safe = *source_data->trace_safe_str == '1' ? 1 : 0;
+    }
+
+    if (source_data->drop_under_ms_str) {
+        int v = atoi(source_data->drop_under_ms_str);
+        config->drop_profiles_under_ms = v < 0 ? 0 : (size_t) v;
     }
 }
 
