@@ -515,6 +515,8 @@ static void finalize(full_reporter_t * reporter, const spx_profiler_event_t * ev
     reporter->metadata->called_function_count = event->func_table.size;
     memcpy(reporter->metadata->enabled_metrics, event->enabled_metrics, SPX_METRIC_COUNT * sizeof(*reporter->metadata->enabled_metrics));
 
+    metadata_save(reporter->metadata, reporter->metadata_file_name);
+
     if (reporter->drop_profiles_under_ms > 0) {
         /* wall_time_ms is in microseconds despite its name (ns / 1000). */
         const size_t threshold_us = reporter->drop_profiles_under_ms * 1000;
@@ -522,13 +524,11 @@ static void finalize(full_reporter_t * reporter, const spx_profiler_event_t * ev
             spx_output_stream_close(reporter->output);
             reporter->output = NULL;
 
-            spx_reporter_full_delete_report(reporter->data_dir, reporter->metadata->key);
-
-            return;
+            char relative_key[PATH_MAX];
+            snprintf(relative_key, sizeof(relative_key), "/%s", reporter->metadata->key);
+            spx_reporter_full_delete_report(reporter->data_dir, relative_key);
         }
     }
-
-    metadata_save(reporter->metadata, reporter->metadata_file_name);
 }
 
 static metadata_t * metadata_create(void)
