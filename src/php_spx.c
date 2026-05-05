@@ -743,6 +743,11 @@ static void profiling_handler_start(void)
         case SPX_CONFIG_REPORT_FULL:
             context.profiling_handler.reporter = spx_reporter_full_create(SPX_G(data_dir));
             if (context.profiling_handler.reporter) {
+                spx_reporter_full_set_drop_profiles_under_ms(
+                    context.profiling_handler.reporter,
+                    context.config.drop_profiles_under_ms
+                );
+
                 snprintf(
                     context.profiling_handler.full_report_key,
                     sizeof(context.profiling_handler.full_report_key),
