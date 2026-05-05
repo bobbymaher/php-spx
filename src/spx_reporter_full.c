@@ -68,6 +68,7 @@ typedef struct {
 typedef struct {
     spx_profiler_reporter_t base;
 
+    char data_dir[PATH_MAX];
     char metadata_file_name[PATH_MAX];
     metadata_t * metadata;
     spx_output_stream_t * output;
@@ -76,6 +77,8 @@ typedef struct {
     buffer_entry_t buffer[BUFFER_CAPACITY];
 
     spx_str_builder_t * str_builder;
+
+    size_t drop_profiles_under_ms;
 } full_reporter_t;
 
 static int full_are_full_stats_required(const spx_profiler_reporter_t * reporter);
@@ -262,6 +265,9 @@ spx_profiler_reporter_t * spx_reporter_full_create(const char * data_dir)
     reporter->metadata = NULL;
     reporter->output = NULL;
     reporter->str_builder = NULL;
+    reporter->drop_profiles_under_ms = 0;
+
+    snprintf(reporter->data_dir, sizeof(reporter->data_dir), "%s", data_dir);
 
     reporter->metadata = metadata_create();
     if (!reporter->metadata) {
@@ -316,6 +322,15 @@ void spx_reporter_full_set_custom_metadata_str(
     const full_reporter_t * reporter = (const full_reporter_t *) base_reporter;
 
     reporter->metadata->custom_metadata_str = strdup(custom_metadata_str);
+}
+
+void spx_reporter_full_set_drop_profiles_under_ms(
+    const spx_profiler_reporter_t * base_reporter,
+    size_t drop_profiles_under_ms
+) {
+    full_reporter_t * reporter = (full_reporter_t *) base_reporter;
+
+    reporter->drop_profiles_under_ms = drop_profiles_under_ms;
 }
 
 const char * spx_reporter_full_get_key(const spx_profiler_reporter_t * base_reporter)
@@ -499,6 +514,19 @@ static void finalize(full_reporter_t * reporter, const spx_profiler_event_t * ev
 
     reporter->metadata->called_function_count = event->func_table.size;
     memcpy(reporter->metadata->enabled_metrics, event->enabled_metrics, SPX_METRIC_COUNT * sizeof(*reporter->metadata->enabled_metrics));
+
+    if (reporter->drop_profiles_under_ms > 0) {
+        /* wall_time_ms is in microseconds despite its name (ns / 1000). */
+        const size_t threshold_us = reporter->drop_profiles_under_ms * 1000;
+        if (reporter->metadata->wall_time_ms < threshold_us) {
+            spx_output_stream_close(reporter->output);
+            reporter->output = NULL;
+
+            spx_reporter_full_delete_report(reporter->data_dir, reporter->metadata->key);
+
+            return;
+        }
+    }
 
     metadata_save(reporter->metadata, reporter->metadata_file_name);
 }

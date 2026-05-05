@@ -57,6 +57,11 @@ void spx_reporter_full_set_custom_metadata_str(
     const char * custom_metadata_str
 );
 
+void spx_reporter_full_set_drop_profiles_under_ms(
+    const spx_profiler_reporter_t * base_reporter,
+    size_t drop_profiles_under_ms
+);
+
 const char * spx_reporter_full_get_key(const spx_profiler_reporter_t * base_reporter);
 
 #endif /* SPX_REPORTER_FULL_H_DEFINED */
