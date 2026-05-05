@@ -354,7 +354,7 @@ static void finalize(full_reporter_t * reporter, const spx_profiler_event_t * ev
         if (wall_time_us < threshold_us) {
             spx_output_stream_close(reporter->output);
             reporter->output = NULL;
-            unlink(reporter->profile_file_name);
+            (void) unlink(reporter->profile_file_name);
             return;
         }
     }
