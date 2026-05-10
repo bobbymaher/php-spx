@@ -1,5 +1,5 @@
-/* SPX - A simple profiler for PHP
- * Copyright (C) 2017-2025 Sylvain Lassaut <NoiseByNorthwest@gmail.com>
+/* SPX - A seamless profiler for PHP
+ * Copyright (C) 2017-2026 Sylvain Lassaut <NoiseByNorthwest@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,12 +35,13 @@
 #include "spx_str_builder.h"
 #include "spx_utils.h"
 
-#define BUFFER_CAPACITY 16384
+#define BUFFER_CAPACITY (8 * 1024)
 
 typedef struct {
     size_t function_idx;
-    int start;
     spx_profiler_metric_values_t metric_values;
+    uint16_t call_site_line;
+    uint8_t start;
 } buffer_entry_t;
 
 typedef struct {
@@ -61,12 +62,13 @@ typedef struct {
     size_t called_function_count;
     size_t call_count;
     size_t recorded_call_count;
-    int enabled_metrics[SPX_METRIC_COUNT];
+    spx_metric_t enabled_metrics[SPX_METRIC_COUNT];
 } metadata_t;
 
 typedef struct {
     spx_profiler_reporter_t base;
 
+    char data_dir[PATH_MAX];
     char metadata_file_name[PATH_MAX];
     metadata_t * metadata;
     spx_output_stream_t * output;
@@ -75,7 +77,11 @@ typedef struct {
     buffer_entry_t buffer[BUFFER_CAPACITY];
 
     spx_str_builder_t * str_builder;
+
+    size_t drop_profiles_under_ms;
 } full_reporter_t;
+
+static int full_are_full_stats_required(const spx_profiler_reporter_t * reporter);
 
 static spx_profiler_reporter_cost_t full_notify(
     spx_profiler_reporter_t * reporter,
@@ -83,7 +89,7 @@ static spx_profiler_reporter_cost_t full_notify(
 );
 
 static void full_destroy(spx_profiler_reporter_t * reporter);
-static void flush_buffer(full_reporter_t * reporter, const int * enabled_metrics);
+static void flush_buffer(full_reporter_t * reporter, size_t enabled_metric_count);
 static void finalize(full_reporter_t * reporter, const spx_profiler_event_t * event);
 
 static metadata_t * metadata_create(void);
@@ -142,16 +148,107 @@ char * spx_reporter_full_build_metadata_file_name(
 char * spx_reporter_full_build_file_name(
     const char * data_dir,
     const char * key,
+    spx_output_stream_compression_type_t compression_type,
     char * file_name,
     size_t size
 ) {
+    char suffix[32];
+    snprintf(
+        suffix,
+        sizeof(suffix),
+        ".txt.%s",
+        spx_output_stream_compression_format_ext(compression_type)
+    );
+
     return spx_utils_resolve_confined_file_absolute_path(
         data_dir,
         key,
-        ".txt.gz",
+        suffix,
         file_name,
         size
     );
+}
+
+int spx_reporter_full_delete_report(
+    const char * data_dir,
+    const char * key
+) {
+    char metadata_file_name[PATH_MAX];
+    char report_file_name[PATH_MAX];
+
+    if (
+        spx_reporter_full_build_metadata_file_name(
+            data_dir,
+            key,
+            metadata_file_name,
+            sizeof(metadata_file_name)
+        ) == NULL
+    ) {
+        return -1;
+    }
+
+    (void) unlink(metadata_file_name);
+
+    if (
+        spx_reporter_full_build_file_name(
+            data_dir,
+            key,
+            SPX_OUTPUT_STREAM_COMPRESSION_BEST,
+            report_file_name,
+            sizeof(report_file_name)
+        ) != NULL
+    ) {
+        (void) unlink(report_file_name);
+    }
+
+    if (
+        spx_reporter_full_build_file_name(
+            data_dir,
+            key,
+            SPX_OUTPUT_STREAM_COMPRESSION_GZIP,
+            report_file_name,
+            sizeof(report_file_name)
+        ) != NULL
+    ) {
+        (void) unlink(report_file_name);
+    }
+
+    return 0;
+}
+
+int spx_reporter_full_delete_all_reports(
+    const char * data_dir
+) {
+    DIR * dir = opendir(data_dir);
+    if (!dir) {
+        return -1;
+    }
+
+    char file_path[PATH_MAX];
+    const struct dirent * entry;
+    while ((entry = readdir(dir)) != NULL) {
+        if (
+            !spx_utils_str_ends_with(entry->d_name, ".json") &&
+            !spx_utils_str_ends_with(entry->d_name, ".txt.gz") &&
+            !spx_utils_str_ends_with(entry->d_name, ".txt.zst")
+        ) {
+            continue;
+        }
+
+        snprintf(
+            file_path,
+            sizeof(file_path),
+            "%s/%s",
+            data_dir,
+            entry->d_name
+        );
+
+        (void) unlink(file_path);
+    }
+
+    closedir(dir);
+
+    return 0;
 }
 
 spx_profiler_reporter_t * spx_reporter_full_create(const char * data_dir)
@@ -161,12 +258,16 @@ spx_profiler_reporter_t * spx_reporter_full_create(const char * data_dir)
         return NULL;
     }
 
+    reporter->base.are_full_stats_required = full_are_full_stats_required;
     reporter->base.notify = full_notify;
     reporter->base.destroy = full_destroy;
 
     reporter->metadata = NULL;
     reporter->output = NULL;
     reporter->str_builder = NULL;
+    reporter->drop_profiles_under_ms = 0;
+
+    snprintf(reporter->data_dir, sizeof(reporter->data_dir), "%s", data_dir);
 
     reporter->metadata = metadata_create();
     if (!reporter->metadata) {
@@ -177,9 +278,10 @@ spx_profiler_reporter_t * spx_reporter_full_create(const char * data_dir)
     snprintf(
         file_name,
         sizeof(file_name),
-        "%s/%s.txt.gz",
+        "%s/%s.txt.%s",
         data_dir,
-        reporter->metadata->key
+        reporter->metadata->key,
+        spx_output_stream_compression_format_ext(SPX_OUTPUT_STREAM_COMPRESSION_BEST)
     );
 
     snprintf(
@@ -191,7 +293,7 @@ spx_profiler_reporter_t * spx_reporter_full_create(const char * data_dir)
     );
 
     (void) mkdir(data_dir, 0777);
-    reporter->output = spx_output_stream_open(file_name, 1);
+    reporter->output = spx_output_stream_open(file_name, SPX_OUTPUT_STREAM_COMPRESSION_BEST);
     if (!reporter->output) {
         goto error;
     }
@@ -222,11 +324,25 @@ void spx_reporter_full_set_custom_metadata_str(
     reporter->metadata->custom_metadata_str = strdup(custom_metadata_str);
 }
 
+void spx_reporter_full_set_drop_profiles_under_ms(
+    const spx_profiler_reporter_t * base_reporter,
+    size_t drop_profiles_under_ms
+) {
+    full_reporter_t * reporter = (full_reporter_t *) base_reporter;
+
+    reporter->drop_profiles_under_ms = drop_profiles_under_ms;
+}
+
 const char * spx_reporter_full_get_key(const spx_profiler_reporter_t * base_reporter)
 {
     const full_reporter_t * reporter = (const full_reporter_t *) base_reporter;
 
     return reporter->metadata->key;
+}
+
+static int full_are_full_stats_required(const spx_profiler_reporter_t * reporter)
+{
+    return 0;
 }
 
 static spx_profiler_reporter_cost_t full_notify(
@@ -246,9 +362,10 @@ static spx_profiler_reporter_cost_t full_notify(
 
         buffer_entry_t * current = &reporter->buffer[reporter->buffer_size];
 
-        current->function_idx  = event->callee->idx;
-        current->start         = event->type == SPX_PROFILER_EVENT_CALL_START;
-        current->metric_values = *event->cum;
+        current->function_idx   = event->callee->idx;
+        current->start          = event->type == SPX_PROFILER_EVENT_CALL_START;
+        current->call_site_line = event->call_site_line;
+        current->metric_values  = *event->cum;
 
         reporter->buffer_size++;
 
@@ -257,7 +374,10 @@ static spx_profiler_reporter_cost_t full_notify(
         }
     }
 
-    flush_buffer(reporter, event->enabled_metrics);
+    flush_buffer(
+        reporter,
+        event->enabled_metric_count
+    );
 
     if (event->type == SPX_PROFILER_EVENT_FINALIZE) {
         finalize(reporter, event);
@@ -283,37 +403,88 @@ static void full_destroy(spx_profiler_reporter_t * base_reporter)
     }
 }
 
-static void flush_buffer(full_reporter_t * reporter, const int * enabled_metrics)
-{
+static void flush_buffer(
+    full_reporter_t * reporter,
+    size_t enabled_metric_count
+) {
     spx_str_builder_reset(reporter->str_builder);
 
     size_t i;
     for (i = 0; i < reporter->buffer_size; i++) {
+        const buffer_entry_t * prev = i > 0 ? &reporter->buffer[i - 1] : NULL;
         const buffer_entry_t * current = &reporter->buffer[i];
 
-        spx_str_builder_append_long(reporter->str_builder, current->function_idx);
-        spx_str_builder_append_char(reporter->str_builder, ' ');
-        spx_str_builder_append_char(reporter->str_builder, current->start ? '1' : '0');
+        if (current->start) {
+            spx_str_builder_append_uint16_hex(reporter->str_builder, current->call_site_line);
+            spx_str_builder_append_char(reporter->str_builder, '|');
+        } else {
+            spx_str_builder_append_char(reporter->str_builder, '-');
+        }
 
-        SPX_METRIC_FOREACH(i, {
-            if (!enabled_metrics[i]) {
-                continue;
+        int func_idx_compressed = 0;
+
+        if (current->function_idx >= 100) {
+            size_t j;
+            for (j = 1; j <= 4; j++) {
+                if (i < j) {
+                    break;
+                }
+
+                if (reporter->buffer[i - j].function_idx == current->function_idx) {
+                    spx_str_builder_append_char(reporter->str_builder, 'r');
+                    spx_str_builder_append_char(reporter->str_builder, '0' + j);
+                    func_idx_compressed = 1;
+
+                    break;
+                }
+            }
+        }
+
+        if (!func_idx_compressed) {
+            spx_str_builder_append_long(reporter->str_builder, current->function_idx);
+        }
+
+        SPX_METRIC_FOREACH_L(i, enabled_metric_count, {
+            spx_str_builder_append_char(reporter->str_builder, '|');
+
+            double dval = current->metric_values.values[i];
+            if (prev) {
+                dval -= prev->metric_values.values[i];
+                if (dval == 0) {
+                    continue;
+                }
+            } else {
+                spx_str_builder_append_char(reporter->str_builder, 'a');
             }
 
-            spx_str_builder_append_char(reporter->str_builder, ' ');
-            spx_str_builder_append_double(reporter->str_builder, current->metric_values.values[i], 4);
+            const long lval = (long) dval;
+
+            if ((double) lval == dval) {
+                spx_str_builder_append_long(reporter->str_builder, lval);
+            } else {
+                spx_str_builder_append_double(reporter->str_builder, dval, 4);
+            }
         });
 
         spx_str_builder_append_str(reporter->str_builder, "\n");
 
         if (spx_str_builder_remaining(reporter->str_builder) < 128) {
-            spx_output_stream_print(reporter->output, spx_str_builder_str(reporter->str_builder));
+            spx_output_stream_write(
+                reporter->output,
+                spx_str_builder_str(reporter->str_builder),
+                spx_str_builder_size(reporter->str_builder)
+            );
+
             spx_str_builder_reset(reporter->str_builder);
         }
     }
 
     if (spx_str_builder_size(reporter->str_builder) > 0) {
-        spx_output_stream_print(reporter->output, spx_str_builder_str(reporter->str_builder));
+        spx_output_stream_write(
+            reporter->output,
+            spx_str_builder_str(reporter->str_builder),
+            spx_str_builder_size(reporter->str_builder)
+        );
     }
 
     reporter->buffer_size = 0;
@@ -329,22 +500,35 @@ static void finalize(full_reporter_t * reporter, const spx_profiler_event_t * ev
 
         spx_output_stream_printf(
             reporter->output,
-            "%s%s%s\n",
+            "%s:%u:%s%s%s\n",
+            entry->function.file_name,
+            entry->function.line,
             entry->function.class_name,
             entry->function.class_name[0] ? "::" : "",
             entry->function.func_name
         );
     }
 
-    reporter->metadata->peak_memory_usage = spx_php_zend_memory_usage();
+    reporter->metadata->peak_memory_usage = spx_php_zend_memory_peak_usage();
     reporter->metadata->wall_time_ms = event->cum->values[SPX_METRIC_WALL_TIME] / 1000;
 
     reporter->metadata->called_function_count = event->func_table.size;
-    SPX_METRIC_FOREACH(i, {
-        reporter->metadata->enabled_metrics[i] = event->enabled_metrics[i];
-    });
+    memcpy(reporter->metadata->enabled_metrics, event->enabled_metrics, SPX_METRIC_COUNT * sizeof(*reporter->metadata->enabled_metrics));
 
     metadata_save(reporter->metadata, reporter->metadata_file_name);
+
+    if (reporter->drop_profiles_under_ms > 0) {
+        /* wall_time_ms is in microseconds despite its name (ns / 1000). */
+        const size_t threshold_us = reporter->drop_profiles_under_ms * 1000;
+        if (reporter->metadata->wall_time_ms < threshold_us) {
+            spx_output_stream_close(reporter->output);
+            reporter->output = NULL;
+
+            char relative_key[PATH_MAX];
+            snprintf(relative_key, sizeof(relative_key), "/%s", reporter->metadata->key);
+            spx_reporter_full_delete_report(reporter->data_dir, relative_key);
+        }
+    }
 }
 
 static metadata_t * metadata_create(void)
@@ -614,8 +798,8 @@ static int metadata_save(const metadata_t * metadata, const char * file_name)
 
     int first = 1;
     SPX_METRIC_FOREACH(i, {
-        if (!metadata->enabled_metrics[i]) {
-            continue;
+        if (metadata->enabled_metrics[i] == SPX_METRIC_NONE) {
+            break;
         }
 
         fprintf(fp, "    ");
@@ -629,12 +813,12 @@ static int metadata_save(const metadata_t * metadata, const char * file_name)
         fprintf(
             fp,
             "\"%s\"\n",
-            spx_metric_info[i].key
+            spx_metric_info[metadata->enabled_metrics[i]].key
         );
     });
 
     fprintf(fp, "  ]\n}\n");
-    
+
     fclose(fp);
 
     return 0;
